@@ -1,10 +1,185 @@
-{% extends "base.html" %}{% block title %}Admin Dashboard{% endblock %}
-{% block content %}
-<div class="dashboard-head"><div><span class="eyebrow">CONTROL CENTER</span><h1>Orders Dashboard</h1><p>सभी Customer Orders और Payments एक जगह</p></div><form method="post" action="{{ url_for('admin_logout') }}"><button class="btn outline">Logout</button></form></div>
-<div class="stats"><div class="stat"><small>Total Orders</small><strong>{{ stats.total or 0 }}</strong></div><div class="stat"><small>Pending</small><strong>{{ stats.pending or 0 }}</strong></div><div class="stat"><small>Printing</small><strong>{{ stats.printing or 0 }}</strong></div><div class="stat"><small>Completed</small><strong>{{ stats.completed or 0 }}</strong></div><div class="stat accent"><small>Verified Collection</small><strong>₹{{ "%.2f"|format(stats.collection or 0) }}</strong></div></div>
-<section class="panel table-panel"><div class="table-heading"><div><h2>Recent Orders</h2><p>Order file download करने के लिए Admin Login जरूरी है।</p></div><a class="btn outline" href="{{ url_for('qr_code') }}">QR Code ↓</a></div>
-{% if orders %}<div class="table-scroll"><table><thead><tr><th>Order</th><th>Customer</th><th>Print</th><th>Amount</th><th>File</th><th>Update Status</th></tr></thead><tbody>
-{% for o in orders %}<tr><td><b>{{ o.id }}</b><small>{{ o.created_at }}</small></td><td>{{ o.customer_name or "—" }}<small>{{ o.mobile or "" }}</small></td><td>{{ o.print_size }}<small>{{ o.copies }} copies</small></td><td>₹{{ "%.2f"|format(o.amount) }}<small>{{ o.payment_mode }}</small></td><td><a class="download" href="{{ url_for('get_file', filename=o.filename) }}">Download</a></td><td><form class="update-form" method="post" action="{{ url_for('update_status', order_id=o.id) }}"><select name="status"><option {% if o.status=="Pending" %}selected{% endif %}>Pending</option><option {% if o.status=="Printing" %}selected{% endif %}>Printing</option><option {% if o.status=="Completed" %}selected{% endif %}>Completed</option></select><select name="payment_status"><option {% if o.payment_status=="Unverified" %}selected{% endif %}>Unverified</option><option {% if o.payment_status=="Paid" %}selected{% endif %}>Paid</option><option {% if o.payment_status=="Cash at counter" %}selected{% endif %}>Cash at counter</option></select><button class="btn small primary">Save</button></form></td></tr>{% endfor %}
-</tbody></table></div>{% else %}<div class="empty"><span>▤</span><h3>अभी कोई Order नहीं है</h3><p>Customer upload करने के बाद Orders यहाँ दिखाई देंगे।</p></div>{% endif %}
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Orders</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js"></script>
+</head>
+<body>
+<header><h1>Shree Karni – Admin Print Orders</h1><a class="lightlink" href="{{ url_for('admin_logout') }}">Logout</a></header>
+<main class="panel wide">
+<h2>Order Summary</h2>
+<div class="stats">
+<div><b>{{stats.total or 0}}</b><span>Total Orders</span></div>
+<div><b>{{stats.pending or 0}}</b><span>Pending</span></div>
+<div><b>{{stats.completed or 0}}</b><span>Completed</span></div>
+<div><b>₹{{'%.2f'|format(stats.collection or 0)}}</b><span>Order Amount</span></div>
+</div>
+
+<section style="margin:18px 0;padding:14px;border:1px solid #ccc;border-radius:8px">
+<h2>Direct USB Printing – QZ Tray</h2>
+<p id="qzStatus" role="status">QZ Tray से कनेक्शन नहीं हुआ है। पहले QZ Tray Windows में चालू रखें।</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+<label>Printer चुनें
+<select id="printerSelect"><option value="">पहले Connect करें</option></select>
+</label>
+<button type="button" id="connectQz">Connect / Printer List Refresh</button>
+</div>
+<p id="printMessage" role="status" aria-live="polite"></p>
+<small>पहली बार QZ Tray सुरक्षा अनुमति माँग सकता है। केवल अपने भरोसेमंद Shree Karni सिस्टम के अनुरोध को Allow करें। Silent Printing के लिए बाद में डिजिटल सर्टिफिकेट और सर्वर-साइड साइनिंग सेटअप करना होगा।</small>
 </section>
-{% endblock %}
+
+<h2>सभी Orders</h2>
+<div class="tablewrap">
+<table>
+<tr><th>Order ID</th><th>Customer</th><th>File</th><th>Size</th><th>Copies</th><th>Payment</th><th>Amount</th><th>Status / Update</th></tr>
+{% for o in orders %}
+<tr>
+<td>{{o.id}}<br><small>{{o.created_at}}</small></td>
+<td>{{o.customer_name}}<br>{{o.mobile}}</td>
+<td><a href="{{ url_for('get_file', filename=o.filename) }}" target="_blank">{{o.original_name}}</a></td>
+<td>{{o.print_size}}</td>
+<td>{{o.copies}}</td>
+<td>{{o.payment_mode}}<br>{{o.payment_status}}</td>
+<td>₹{{'%.2f'|format(o.amount)}}</td>
+<td>
+<b>{{o.status}}</b>
+<form class="inline" method="post" action="{{ url_for('update_status', order_id=o.id) }}">
+<select name="status">
+<option {% if o.status=='Pending' %}selected{% endif %}>Pending</option>
+<option {% if o.status=='Printing' %}selected{% endif %}>Printing</option>
+<option {% if o.status=='Completed' %}selected{% endif %}>Completed</option>
+</select>
+<select name="payment_status">
+<option {% if o.payment_status=='Unverified' %}selected{% endif %}>Unverified</option>
+<option {% if o.payment_status=='Paid' %}selected{% endif %}>Paid</option>
+<option {% if o.payment_status=='Cash at counter' %}selected{% endif %}>Cash at counter</option>
+</select>
+<button class="small">Save</button>
+</form>
+<button type="button" class="small qzPrint"
+ data-file-url="{{ url_for('get_file', filename=o.filename) }}"
+ data-filename="{{ o.filename }}"
+ data-copies="{{ o.copies }}"
+ data-order-id="{{ o.id }}">Direct Print</button>
+<a href="{{ url_for('get_file', filename=o.filename) }}" target="_blank">Open / Print</a>
+</td>
+</tr>
+{% else %}
+<tr><td colspan="8">अभी कोई Order नहीं है।</td></tr>
+{% endfor %}
+</table>
+</div>
+</main>
+
+<script>
+(() => {
+  const statusEl = document.getElementById('qzStatus');
+  const messageEl = document.getElementById('printMessage');
+  const printerSelect = document.getElementById('printerSelect');
+  const connectButton = document.getElementById('connectQz');
+  let connected = false;
+
+  // Unsigned mode: QZ Tray may show a permission prompt for privileged actions.
+  // Do not put a private signing key in this HTML file.
+  if (window.qz && qz.security) {
+    qz.security.setCertificatePromise((resolve) => resolve());
+    qz.security.setSignaturePromise(() => (resolve) => resolve());
+  }
+
+  async function connectQz() {
+    if (!window.qz) {
+      throw new Error('QZ Tray JavaScript Library लोड नहीं हुई। Internet/CDN connection जाँचें।');
+    }
+    if (!qz.websocket.isActive()) {
+      await qz.websocket.connect();
+    }
+    connected = true;
+    statusEl.textContent = 'QZ Tray Connected. Printer list लोड हो रही है…';
+    const printers = await qz.printers.find();
+    printerSelect.innerHTML = '<option value="">Printer चुनें</option>';
+    printers.forEach((name) => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      printerSelect.appendChild(option);
+    });
+    const canon = printers.find(name => /Canon.*G301/i.test(name));
+    if (canon) printerSelect.value = canon;
+    statusEl.textContent = printers.length
+      ? 'Connected – ' + printers.length + ' printer मिले।'
+      : 'QZ Tray जुड़ा है, लेकिन कोई printer नहीं मिला।';
+  }
+
+  connectButton.addEventListener('click', async () => {
+    connectButton.disabled = true;
+    messageEl.textContent = '';
+    try {
+      await connectQz();
+    } catch (err) {
+      connected = false;
+      statusEl.textContent = 'Connection नहीं हुआ।';
+      messageEl.textContent = err.message || String(err);
+    } finally {
+      connectButton.disabled = false;
+    }
+  });
+
+  function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  document.querySelectorAll('.qzPrint').forEach(button => {
+    button.addEventListener('click', async () => {
+      const printer = printerSelect.value;
+      if (!connected || !qz.websocket.isActive()) {
+        messageEl.textContent = 'पहले Connect / Printer List Refresh दबाएँ।';
+        return;
+      }
+      if (!printer) {
+        messageEl.textContent = 'पहले Printer चुनें।';
+        return;
+      }
+
+      button.disabled = true;
+      messageEl.textContent = 'Order ' + button.dataset.orderId + ' की फाइल तैयार हो रही है…';
+      try {
+        // Fetch through the logged-in browser session, then pass Base64 to local QZ Tray.
+        const response = await fetch(button.dataset.fileUrl, { credentials: 'same-origin' });
+        if (!response.ok) throw new Error('Order file डाउनलोड नहीं हुई (HTTP ' + response.status + ').');
+        const buffer = await response.arrayBuffer();
+        const ext = button.dataset.filename.toLowerCase().split('.').pop();
+        const format = ext === 'pdf' ? 'pdf' : 'image';
+        const base64 = arrayBufferToBase64(buffer);
+        const copies = Math.max(1, Math.min(100, Number(button.dataset.copies) || 1));
+        const config = qz.configs.create(printer, {
+          copies: copies,
+          jobName: 'Shree Karni ' + button.dataset.orderId
+        });
+        await qz.print(config, [{
+          type: 'pixel',
+          format: format,
+          flavor: 'base64',
+          data: base64
+        }]);
+        messageEl.textContent = 'Print job QZ Tray को भेज दिया गया: ' + button.dataset.orderId +
+          '. वास्तविक प्रिंट निकलने की पुष्टि Printer से करें।';
+      } catch (err) {
+        messageEl.textContent = 'Print नहीं हुआ: ' + (err.message || String(err));
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
