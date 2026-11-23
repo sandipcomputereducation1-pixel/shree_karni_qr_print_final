@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Order {{ order.id }}{% endblock %}
+{% block content %}
+<section class="success-head"><div class="success-icon">✓</div><span class="eyebrow">ORDER CREATED</span><h1>आपका Order बन गया है!</h1><p>नीचे दिया गया Order ID सुरक्षित रखें।</p></section>
+<section class="panel order-card">
+  <div class="order-id"><small>YOUR ORDER ID</small><strong>{{ order.id }}</strong></div>
+  <div class="detail-grid"><div><small>Customer</small><b>{{ order.customer_name or "—" }}</b></div><div><small>Mobile</small><b>{{ order.mobile or "—" }}</b></div><div><small>Print Size</small><b>{{ order.print_size }}</b></div><div><small>Copies</small><b>{{ order.copies }}</b></div><div><small>Amount</small><b>₹{{ "%.2f"|format(order.amount) }}</b></div><div><small>Payment</small><b>{{ order.payment_mode }} · {{ order.payment_status }}</b></div></div>
+  <div class="status-line"><span>Print Status</span><b class="status {{ order.status|lower }}">{{ order.status }}</b></div>
+  <p class="hint">Order Status Admin Panel से अपडेट होगा। कृपया दुकान से संपर्क करते समय Order ID बताएं।</p>
+  <a class="btn primary wide" href="{{ url_for('upload_page') }}">नया Order बनाएं</a>
+</section>
+{% endblock %}
