@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Customer Upload | {{ shop_name }}{% endblock %}
+{% block content %}
+<section class="hero"><div><span class="eyebrow">FAST · SIMPLE · SECURE</span><h1>अपनी Photo या PDF<br>यहाँ Upload करें</h1><p>फाइल भेजें, प्रिंट की जानकारी भरें और अपना Order ID प्राप्त करें।</p></div><div class="hero-icon">⌁</div></section>
+<form class="panel form-grid" method="post" enctype="multipart/form-data">
+  <div class="section-title"><span>01</span><div><h2>फाइल चुनें</h2><p>JPG, PNG, WEBP या PDF · अधिकतम 25 MB</p></div></div>
+  <label class="file-drop"><input type="file" name="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required><strong>＋ फाइल चुनने के लिए क्लिक करें</strong><small>Photo या PDF select करें</small></label>
+  <div class="section-title"><span>02</span><div><h2>Photo / PDF Settings</h2><p>जरूरत के अनुसार विकल्प चुनें</p></div></div>
+  <div class="fields">
+    <label>Photo Rotation<select name="photo_rotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label>
+    <label>Photo Zoom<select name="photo_zoom"><option value="1">Normal</option><option value="1.1">1.1×</option><option value="1.2">1.2×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+    <label>PDF शुरू पेज<input type="number" name="page_start" min="1" value="1"></label>
+    <label>PDF अंतिम पेज<input type="number" name="page_end" min="1" placeholder="सभी पेज"></label>
+    <label>PDF Rotation<select name="pdf_rotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label>
+    <label>PDF Crop Margin (%)<input type="number" name="pdf_margin" min="0" max="20" value="0"></label>
+  </div>
+  <label class="check"><input type="checkbox" name="make_sheet" value="yes"> 4×6 Inch शीट पर 8 Passport Size फोटो बनाएं</label>
+  <div class="section-title"><span>03</span><div><h2>Customer Details</h2><p>Order की पहचान और प्रिंट जानकारी</p></div></div>
+  <div class="fields">
+    <label>ग्राहक का नाम<input name="customer_name" maxlength="100" placeholder="नाम"></label>
+    <label>मोबाइल नंबर<input name="mobile" maxlength="20" inputmode="tel" placeholder="मोबाइल नंबर"></label>
+    <label>Print Size<select name="print_size"><option>A4</option><option>4×6 Inch</option><option>ID Card</option><option>PVC Card 98×54 mm</option></select></label>
+    <label>Copies<input type="number" name="copies" min="1" max="100" value="1" required></label>
+    <label>Amount (₹)<input type="number" name="amount" min="0" max="100000" step="0.01" value="0"></label>
+    <label>Payment Mode<select name="payment_mode"><option>Cash</option><option>UPI</option></select></label>
+  </div>
+  {% if upi_id %}<p class="hint">UPI ID: <b>{{ upi_id }}</b> · UPI भुगतान Admin द्वारा verify होगा।</p>{% endif %}
+  <button class="btn primary wide" type="submit">Upload & Create Order <span>→</span></button>
+</form>
+<div class="trust-row"><span>✓ आसान Order Tracking</span><span>✓ Admin Verified Payment</span><span>✓ Secure File Access</span></div>
+{% endblock %}

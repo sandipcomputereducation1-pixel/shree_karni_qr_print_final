@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Admin Login{% endblock %}
+{% block content %}
+<section class="login-wrap"><div class="login-brand"><span class="brand-mark large">SK</span><span class="eyebrow">MANAGEMENT PORTAL</span><h1>Admin Login</h1><p>Orders, payments और print status manage करें।</p></div>
+<form class="panel login-panel" method="post"><label>Username<input name="username" required autocomplete="username"></label><label>Password<input type="password" name="password" required autocomplete="current-password"></label><button class="btn primary wide">Login to Dashboard →</button><a class="back-link" href="{{ url_for('upload_page') }}">← Customer Upload पर जाएँ</a></form></section>
+{% endblock %}
